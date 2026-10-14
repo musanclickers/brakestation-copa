@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+
+// Un solo .env para dev: el de la app (apps/quiniela/.env).
+config({ path: ['.env', '../../apps/quiniela/.env'] });
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({

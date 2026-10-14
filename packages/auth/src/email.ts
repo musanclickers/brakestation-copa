@@ -1,4 +1,14 @@
-// Wrapper de marca para todos los emails (magic link, comprobantes, avisos).
+// Wrapper de marca y envío de todos los emails (magic link, comprobantes, avisos).
+import { Resend } from 'resend';
+
+// Lazy: crear el cliente al importar truena el build de Next sin RESEND_API_KEY.
+let client: Resend | null = null;
+export async function sendEmail(o: { to: string; subject: string; html: string }): Promise<void> {
+  client ??= new Resend(process.env.RESEND_API_KEY);
+  const { error } = await client.emails.send({ from: EMAIL_FROM, ...o });
+  if (error) throw new Error(`Resend: ${error.message}`);
+}
+
 export const SITE_URL = (
   process.env.AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://copa.brakestation.com.mx'
 ).replace(/\/$/, '');

@@ -1,16 +1,14 @@
 import NextAuth from 'next-auth';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import Resend from 'next-auth/providers/resend';
-import { Resend as ResendClient } from 'resend';
 import { db } from '@brakestation/db';
 import { users, accounts, sessions, verificationTokens } from '@brakestation/db/schema';
 import { generateMagicToken } from './magic-link';
-import { SITE_URL, EMAIL_FROM, linkEmailHtml } from './email';
+import { SITE_URL, EMAIL_FROM, linkEmailHtml, sendEmail } from './email';
 
 export * from './email';
 export { generateMagicToken, verifyMagicToken, type MagicPurpose } from './magic-link';
 
-const resendClient = new ResendClient(process.env.RESEND_API_KEY);
 
 
 // The adapter type expects snake_case JS property names (refresh_token, access_token, …)
@@ -69,8 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 export async function sendLoginLink(userId: string, email: string, next = '/dashboard'): Promise<void> {
   const token = generateMagicToken(userId, 'login');
   const url = `${SITE_URL}/auth/magic?${new URLSearchParams({ token, next })}`;
-  await resendClient.emails.send({
-    from: EMAIL_FROM,
+  await sendEmail({
     to: email,
     subject: 'Tu acceso a la Quiniela Copa Brake Station',
     html: linkEmailHtml({
@@ -87,8 +84,7 @@ export async function sendLoginLink(userId: string, email: string, next = '/dash
 export async function sendAdminSetupLink(userId: string, email: string): Promise<void> {
   const token = generateMagicToken(userId, 'admin_setup');
   const url = `${SITE_URL}/api/admin/setup?${new URLSearchParams({ token })}`;
-  await resendClient.emails.send({
-    from: EMAIL_FROM,
+  await sendEmail({
     to: email,
     subject: 'Crea tu contraseña de admin · Copa Brake Station',
     html: linkEmailHtml({

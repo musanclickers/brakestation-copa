@@ -2,12 +2,11 @@ import { getAdminUserId } from '@/lib/admin-auth';
 import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
 import { db } from '@brakestation/db';
 import { users, adminActions } from '@brakestation/db/schema';
-import { wrapBranded, emailButton, escapeHtml, SITE_URL, EMAIL_FROM } from '@brakestation/auth/email';
+import { wrapBranded, emailButton, escapeHtml, SITE_URL, sendEmail } from '@brakestation/auth/email';
 import { eq } from 'drizzle-orm';
 import { randomInt } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { Resend } from 'resend';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -59,8 +58,7 @@ export async function POST(req: Request) {
 
   const loginUrl = `${SITE_URL}/admin/login`;
   try {
-    await new Resend(process.env.RESEND_API_KEY).emails.send({
-      from: EMAIL_FROM,
+    await sendEmail({
       to: email,
       subject: 'Tu acceso admin · Quiniela Copa Brake Station',
       html: wrapBranded('Tu acceso al panel admin', [

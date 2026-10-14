@@ -1,11 +1,10 @@
-import { auth, EMAIL_FROM } from '@brakestation/auth';
+import { auth, sendEmail } from '@brakestation/auth';
 import { db } from '@brakestation/db';
 import { matches, matchPredictions, phaseSubmissions, auditLog } from '@brakestation/db/schema';
 import { isPhase, isMatchOpen, isMatchLocked, homeName, awayName, PHASE_LABELS } from '@brakestation/db/phases';
 import { generatePhaseSeal, generateSeal } from '@brakestation/seal';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { z } from 'zod';
 import { comprobanteHtml } from '@/lib/email-templates';
 import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
@@ -24,8 +23,6 @@ const BodySchema = z.object({
     .min(1)
     .max(8),
 });
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Guarda (upsert) pronósticos de una jornada. Cada partido se puede editar hasta
 // su propio lockout (15 min antes); que un partido de la jornada ya haya cerrado
@@ -129,8 +126,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ phase: 
       .map((r) => ({ m: byId.get(r.matchId)!, h: r.h, a: r.a }))
       .sort((x, y) => x.m.startsAt.getTime() - y.m.startsAt.getTime())
       .map(({ m, h, a }) => ({ home: homeName(m) ?? '', away: awayName(m) ?? '', h, a }));
-    await resend.emails.send({
-      from: EMAIL_FROM,
+    await sendEmail({
       to: session.user.email!,
       subject: `Tus pronósticos de ${PHASE_LABELS[phase]} · Copa Brake Station`,
       html: comprobanteHtml({ phase: PHASE_LABELS[phase], shortcode, submittedAt, picks }),

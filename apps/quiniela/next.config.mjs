@@ -6,7 +6,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  outputFileTracingRoot: path.join(__dirname, '../../'),
+  experimental: {
+    // Monorepo: el standalone incluye packages/* y deja server.js en apps/quiniela/.
+    outputFileTracingRoot: path.join(__dirname, '../../'),
+  },
   transpilePackages: [
     '@brakestation/db',
     '@brakestation/seal',

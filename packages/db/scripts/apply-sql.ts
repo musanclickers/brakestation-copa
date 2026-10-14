@@ -1,6 +1,9 @@
 // Dev local: aplica drizzle/0*.sql (migrate) o drizzle/seed_*.sql (seed) contra
 // DATABASE_URL. En producción lo mismo lo hace apps/quiniela/scripts/entrypoint.sh.
-import 'dotenv/config';
+import { config } from 'dotenv';
+
+// Un solo .env para dev: el de la app (apps/quiniela/.env).
+config({ path: ['.env', '../../apps/quiniela/.env'] });
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

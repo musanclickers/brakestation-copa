@@ -4,16 +4,13 @@ import { db } from '@brakestation/db';
 import { notificationLogs, auditLog } from '@brakestation/db/schema';
 import { AudienceSchema, resolveAudience } from '@/lib/notification-audiences';
 import { getTemplate } from '@/lib/notification-templates';
-import { generateMagicToken, SITE_URL, EMAIL_FROM } from '@brakestation/auth';
-import { Resend } from 'resend';
+import { generateMagicToken, SITE_URL, sendEmail } from '@brakestation/auth';
 import { and, eq, gt, isNotNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 const SendSchema = z.object({
   templateKey: z.string(),
@@ -73,7 +70,7 @@ export async function POST(req: Request) {
           ? `${SITE_URL}/auth/magic?${new URLSearchParams({ token: generateMagicToken(r.userId, 'login'), next: '/quiniela' })}`
           : `${SITE_URL}/entrar`;
         try {
-          await resend.emails.send({ from: EMAIL_FROM, to: r.email, subject: tpl.subject, html: tpl.render({ name: r.name, quinielaLink }) });
+          await sendEmail({ to: r.email, subject: tpl.subject, html: tpl.render({ name: r.name, quinielaLink }) });
           succeeded++;
         } catch (err) {
           failed++;
