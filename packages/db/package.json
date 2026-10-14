@@ -9,9 +9,8 @@
     "./phases": "./src/phases.ts"
   },
   "scripts": {
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx src/seed.ts",
+    "db:migrate": "tsx scripts/apply-sql.ts migrate",
+    "db:seed": "tsx scripts/apply-sql.ts seed",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

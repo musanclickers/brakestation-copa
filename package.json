@@ -5,7 +5,6 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
-    "db:generate": "pnpm --filter @brakestation/db db:generate",
     "db:migrate": "pnpm --filter @brakestation/db db:migrate",
     "db:seed": "pnpm --filter @brakestation/db db:seed"
   },
