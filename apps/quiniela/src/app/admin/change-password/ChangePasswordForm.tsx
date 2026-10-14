@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BrandHeader } from '@/components/BrandHeader';
 
-export function ChangePasswordForm({ isForced }: { isForced: boolean }) {
+// hasPassword=false: admin recién dado de alta por ADMIN_EMAILS, todavía sin
+// contraseña; no se pide la actual.
+export function ChangePasswordForm({ isForced, hasPassword }: { isForced: boolean; hasPassword: boolean }) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,7 +26,7 @@ export function ChangePasswordForm({ isForced }: { isForced: boolean }) {
       setError('Las contraseñas no coinciden');
       return;
     }
-    if (newPassword === currentPassword) {
+    if (hasPassword && newPassword === currentPassword) {
       setError('La nueva contraseña debe ser distinta de la actual');
       return;
     }
@@ -42,7 +44,7 @@ export function ChangePasswordForm({ isForced }: { isForced: boolean }) {
         setLoading(false);
         return;
       }
-      router.push('/admin/registrations');
+      router.push('/admin/matches');
     } catch {
       setError('Error de red');
       setLoading(false);
@@ -53,7 +55,7 @@ export function ChangePasswordForm({ isForced }: { isForced: boolean }) {
     <div className="flex items-center justify-center py-8">
       <form onSubmit={handleSubmit} className="max-w-sm w-full backdrop-blur-xl bg-white/[0.10] border border-white/[0.18] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] p-8">
         <h1 className="text-2xl font-bold text-white mb-1 text-center">
-          {isForced ? 'Cambia tu contraseña temporal' : 'Cambiar contraseña'}
+          {!hasPassword ? 'Crea tu contraseña' : isForced ? 'Cambia tu contraseña temporal' : 'Cambiar contraseña'}
         </h1>
         {isForced && (
           <p className="text-sm text-white/60 mb-4 text-center">
@@ -61,6 +63,7 @@ export function ChangePasswordForm({ isForced }: { isForced: boolean }) {
           </p>
         )}
 
+        {hasPassword && (<>
         <label htmlFor="current-pw" className="block mb-1 text-sm font-medium text-white">Contraseña actual</label>
         <input
           id="current-pw"
@@ -71,6 +74,7 @@ export function ChangePasswordForm({ isForced }: { isForced: boolean }) {
           autoComplete="current-password"
           required
         />
+        </>)}
 
         <label htmlFor="new-pw" className="block mb-1 text-sm font-medium text-white">Nueva contraseña</label>
         <input
@@ -100,7 +104,7 @@ export function ChangePasswordForm({ isForced }: { isForced: boolean }) {
 
         <button
           type="submit"
-          disabled={loading || !currentPassword || !newPassword || !confirmPassword}
+          disabled={loading || (hasPassword && !currentPassword) || !newPassword || !confirmPassword}
           className="w-full rounded-xl bg-brand-red px-6 py-3 text-white font-semibold text-lg hover:bg-brand-red/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Guardando...' : 'Guardar nueva contraseña'}

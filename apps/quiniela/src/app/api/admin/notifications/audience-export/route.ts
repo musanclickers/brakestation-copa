@@ -1,42 +1,33 @@
 import { getAdminUserId } from '@/lib/admin-auth';
-import { resolveAudience, type AudienceSpec } from '@/lib/notification-audiences';
+import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
+import { AudienceSchema, resolveAudience } from '@/lib/notification-audiences';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
 function escapeCsv(val: string | null | undefined): string {
   if (val == null) return '';
-  const s = String(val);
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
+  let s = String(val);
+  // Evita inyección de fórmulas al abrir el CSV en Excel.
+  if (/^[=+\-@]/.test(s)) s = `'${s}`;
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-// CSV of exactly the people resolveAudience() returns — same set that would get
-// the email/WhatsApp, so the download never drifts from the send.
+// CSV de exactamente las personas que resolveAudience() regresa: el mismo
+// conjunto que recibiría el correo.
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) return forbiddenOrigin();
   const adminId = await getAdminUserId();
   if (!adminId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
-  }
-  const { spec } = body as { spec: AudienceSpec };
-  if (!spec || typeof spec !== 'object' || !('kind' in spec)) {
-    return NextResponse.json({ error: 'spec_required' }, { status: 400 });
-  }
+  const parsed = z.object({ spec: AudienceSchema }).safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'spec_required' }, { status: 400 });
+  const { spec } = parsed.data;
 
   const recipients = await resolveAudience(spec);
-
-  const headers = ['Boleto', 'Participante', 'Email', 'Teléfono', 'Cohorte'];
-  const rows = recipients.map((r) =>
-    [r.ticketCode ?? '', r.name, r.email, r.phone ?? '', r.cohort ?? ''].map(escapeCsv).join(','),
-  );
-  const csv = '﻿' + [headers.join(','), ...rows].join('\r\n');
+  const rows = recipients.map((r) => [r.name, r.email].map(escapeCsv).join(','));
+  const csv = '﻿' + ['Nombre,Email', ...rows].join('\r\n');
 
   return new Response(csv, {
     headers: {

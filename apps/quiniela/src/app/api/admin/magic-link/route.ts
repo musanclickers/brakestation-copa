@@ -1,79 +1,40 @@
 import { getAdminUserId } from '@/lib/admin-auth';
-import { generateMagicToken } from '@brakestation/auth';
+import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
+import { generateMagicToken, SITE_URL } from '@brakestation/auth';
 import { db } from '@brakestation/db';
-import { users, tickets, ticketRegistrations } from '@brakestation/db/schema';
+import { users, adminActions } from '@brakestation/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
+const schema = z.object({ email: z.string().trim().toLowerCase().email() });
+
+// Solo para participantes ya registrados (nombre + términos aceptados): el
+// admin no puede registrar a alguien a su nombre.
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) return forbiddenOrigin();
   const adminId = await getAdminUserId();
-  if (!adminId) {
-    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  }
+  if (!adminId) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const { email } = await req.json();
-  if (!email || typeof email !== 'string') {
-    return NextResponse.json({ error: 'email required' }, { status: 400 });
-  }
+  const parsed = schema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: 'invalid_input', message: 'Correo inválido' }, { status: 400 });
 
-  const normalizedEmail = email.trim().toLowerCase();
-
-  let user = await db.query.users.findFirst({
-    where: eq(users.email, normalizedEmail),
-    columns: { id: true, email: true },
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, parsed.data.email),
+    columns: { id: true, name: true, termsAcceptedAt: true },
   });
-
-  const userExisted = !!user;
-
-  if (!user) {
-    const inserted = await db
-      .insert(users)
-      .values({ email: normalizedEmail })
-      .returning({ id: users.id, email: users.email });
-    user = inserted[0]!;
+  if (!user?.termsAcceptedAt) {
+    return NextResponse.json({ error: 'not_registered', message: 'Ese correo no se ha registrado. Pídele que se registre en la página de inicio.' }, { status: 404 });
   }
 
-  const userTickets = await db
-    .select({
-      code: tickets.code,
-      registrationId: tickets.registrationId,
-    })
-    .from(tickets)
-    .where(eq(tickets.assignedUserId, user.id));
+  await db.insert(adminActions).values({ adminId, action: 'generate_login_link', targetTable: 'users', targetId: user.id });
 
-  let registrationStatus: string | null = null;
-  if (userTickets.length > 0 && userTickets[0]!.registrationId) {
-    const reg = await db.query.ticketRegistrations.findFirst({
-      where: eq(ticketRegistrations.id, userTickets[0]!.registrationId),
-      columns: { reviewStatus: true },
-    });
-    registrationStatus = reg?.reviewStatus ?? null;
-  }
-
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || 'https://goleadora.brakestation.com.mx';
-  const ticketCode = userTickets[0]?.code ?? null;
-
-  const loginToken = generateMagicToken(user.id, '');
-  const loginLink = `${baseUrl}/auth/magic?${new URLSearchParams({
-    token: loginToken,
-    next: '/activar',
-  })}`;
-
-  const quinielaLink = ticketCode
-    ? `${baseUrl}/auth/magic?${new URLSearchParams({
-        token: generateMagicToken(user.id, ticketCode),
-        next: `/quiniela?ticket=${ticketCode}`,
-      })}`
-    : null;
-
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
+  const token = generateMagicToken(user.id, 'login');
   return NextResponse.json({
-    loginLink,
-    quinielaLink,
-    ticketCode,
-    userExists: userExisted,
-    registrationStatus,
-    expires: expires.toISOString(),
+    link: `${SITE_URL}/auth/magic?${new URLSearchParams({ token, next: '/quiniela' })}`,
+    name: user.name,
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   });
 }

@@ -3,45 +3,35 @@ import { users } from '@brakestation/db/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { setAdminCookie } from '@/lib/admin-auth';
+import { rateLimit, resetRateLimit, clientIp } from '@/lib/rate-limit';
+import { verifyTurnstile } from '@/lib/turnstile';
+import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const schema = z.object({
-  email: z.string().email().toLowerCase().trim(),
-  password: z.string().min(8),
+  email: z.string().trim().toLowerCase().email(),
+  password: z.string().min(8).max(200),
+  turnstileToken: z.string().max(4096).optional(),
 });
 
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000;
 
-function checkRateLimit(key: string): boolean {
-  const now = Date.now();
-  const rec = attempts.get(key);
-  if (!rec || now > rec.resetAt) {
-    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
-    return true;
-  }
-  if (rec.count >= MAX_ATTEMPTS) return false;
-  rec.count++;
-  return true;
-}
-
 export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  if (!checkRateLimit(ip)) {
-    return Response.json(
-      { error: 'too_many_attempts', message: 'Demasiados intentos. Espera 15 minutos.' },
-      { status: 429 }
-    );
+  if (!isSameOrigin(req)) return forbiddenOrigin();
+
+  const ip = clientIp(req);
+  if (!rateLimit(`admin-login:${ip}`, 5, WINDOW_MS)) {
+    return Response.json({ error: 'too_many_attempts', message: 'Demasiados intentos. Espera 15 minutos.' }, { status: 429 });
   }
 
-  const body = await req.json().catch(() => null);
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return Response.json({ error: 'invalid_input' }, { status: 400 });
+  const parsed = schema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return Response.json({ error: 'invalid_input', message: 'Escribe tu email y contraseña.' }, { status: 400 });
+
+  if (!(await verifyTurnstile(parsed.data.turnstileToken, ip))) {
+    return Response.json({ error: 'captcha_failed', message: 'No pudimos confirmar que eres humano. Recarga e intenta de nuevo.' }, { status: 400 });
   }
 
   const user = await db.query.users.findFirst({
@@ -49,20 +39,12 @@ export async function POST(req: Request) {
     columns: { id: true, isAdmin: true, adminPasswordHash: true, mustChangePassword: true },
   });
 
-  const invalid = () =>
-    Response.json({ error: 'invalid_credentials', message: 'Email o contraseña incorrectos.' }, { status: 401 });
-
+  const invalid = () => Response.json({ error: 'invalid_credentials', message: 'Email o contraseña incorrectos.' }, { status: 401 });
   if (!user || !user.isAdmin || !user.adminPasswordHash) return invalid();
-
-  const ok = await bcrypt.compare(parsed.data.password, user.adminPasswordHash);
-  if (!ok) return invalid();
+  if (!(await bcrypt.compare(parsed.data.password, user.adminPasswordHash))) return invalid();
 
   await setAdminCookie(user.id);
-  attempts.delete(ip);
+  resetRateLimit(`admin-login:${ip}`);
 
-  if (user.mustChangePassword) {
-    return Response.json({ ok: true, redirect: '/admin/change-password' });
-  }
-
-  return Response.json({ ok: true, redirect: '/admin/registrations' });
+  return Response.json({ ok: true, redirect: user.mustChangePassword ? '/admin/change-password' : '/admin/matches' });
 }
