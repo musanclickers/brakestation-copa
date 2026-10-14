@@ -1,30 +1,31 @@
 import assert from 'node:assert/strict';
-import { scoreMatch, matchResultMeta } from './score-match';
+import { scoreMatch, matchResultMeta, scoreMeta } from './score-match';
 
-// ── Tiempo regular (sin penales): comportamiento histórico intacto ──
-assert.equal(scoreMatch(2, 1, 2, 1), 5);            // marcador exacto
-assert.equal(scoreMatch(3, 0, 2, 1), 2);            // mismo resultado (local gana)
-assert.equal(scoreMatch(0, 0, 0, 0), 5);            // empate exacto
-assert.equal(scoreMatch(1, 1, 2, 2), 2);            // empate (mismo signo 0)
+// ── Tiempo regular: 10 exacto / 3 resultado / 0 fallo ──
+assert.equal(scoreMatch(2, 1, 2, 1), 10);           // marcador exacto
+assert.equal(scoreMatch(3, 0, 2, 1), 3);            // mismo resultado (local gana)
+assert.equal(scoreMatch(0, 2, 1, 3), 3);            // mismo resultado (visitante gana)
+assert.equal(scoreMatch(0, 0, 0, 0), 10);           // empate exacto
+assert.equal(scoreMatch(2, 2, 1, 1), 3);            // bug reportado en el Mundial: empate 2-2 vs real 1-1 → 3
+assert.equal(scoreMatch(1, 1, 2, 2), 3);            // empate (mismo signo 0)
 assert.equal(scoreMatch(2, 1, 0, 2), 0);            // resultado contrario
 assert.equal(scoreMatch(2, 1, 1, 1), 0);            // predijo gana local, fue empate
+assert.equal(scoreMatch(1, 1, 2, 1), 0);            // predijo empate, ganó local
 
-// ── Penales: 2 pts al que predijo al que avanzó O a cualquier empate ──
-// Marcador regular empate 1-1, gana local en penales:
-assert.equal(scoreMatch(2, 1, 1, 1, 'home'), 2);    // predijo gana local → acertó ganador
+// ── Penales (Fase Final): 3 al que predijo al que avanzó o cualquier empate ──
+assert.equal(scoreMatch(2, 1, 1, 1, 'home'), 3);    // predijo gana local → acertó ganador
 assert.equal(scoreMatch(0, 3, 1, 1, 'home'), 0);    // predijo gana visitante → falló
-assert.equal(scoreMatch(1, 1, 1, 1, 'home'), 2);    // predijo empate → acertó resultado regular
-assert.equal(scoreMatch(0, 0, 1, 1, 'home'), 2);    // cualquier empate cuenta (0-0)
-assert.equal(scoreMatch(1, 2, 1, 1, 'away'), 2);    // predijo gana visitante, avanzó visitante
-assert.equal(scoreMatch(2, 2, 2, 2, 'away'), 2);    // predijo empate → 2
-// Nunca 5 en penales aunque "clave" el empate exacto:
-assert.equal(scoreMatch(1, 1, 1, 1, 'away'), 2);
+assert.equal(scoreMatch(1, 1, 1, 1, 'home'), 3);    // predijo empate
+assert.equal(scoreMatch(1, 2, 1, 1, 'away'), 3);    // predijo gana visitante, avanzó visitante
+assert.equal(scoreMatch(1, 1, 1, 1, 'away'), 3);    // nunca 10 en penales
 
-// ── matchResultMeta ──
-assert.equal(matchResultMeta(5).label, 'Exacto +5');
-assert.equal(matchResultMeta(2).label, 'Correcto +2');
-assert.equal(matchResultMeta(2, true).label, 'Ganador +2');           // penales, predijo ganador
-assert.equal(matchResultMeta(2, true, true).label, 'Empate +2');      // penales, predijo empate
+// ── Badges ──
+assert.equal(matchResultMeta(10).label, 'Exacto +10');
+assert.equal(matchResultMeta(3).label, 'Correcto +3');
+assert.equal(matchResultMeta(3, true).label, 'Ganador +3');
+assert.equal(matchResultMeta(3, true, true).label, 'Empate +3');
 assert.equal(matchResultMeta(0).label, 'Fallaste +0');
+assert.equal(scoreMeta(2, 2, 1, 1).label, 'Correcto +3');
+assert.equal(scoreMeta(3, 1, 1, 1, 'home').label, 'Ganador +3');
 
 console.log('score-match: OK');
