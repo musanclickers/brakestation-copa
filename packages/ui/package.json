@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./flags": "./src/lib/countryFlags.ts",
+    
     "./time": "./src/lib/formatMatchTime.ts",
     "./teams": "./src/lib/teamDisplayName.ts",
     "./tailwind.config": "./tailwind.config.ts"

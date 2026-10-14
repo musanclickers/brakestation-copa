@@ -1,47 +1,22 @@
-version: "3.9"
-
+# Dev local: Postgres en 5433 (no choca con un Postgres local en 5432).
+# La app corre fuera de Docker con `pnpm dev` en :3000.
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: quiniela
-      POSTGRES_PASSWORD: quiniela
-      POSTGRES_DB: quiniela
+      POSTGRES_USER: copa_user
+      POSTGRES_PASSWORD: copa_user
+      POSTGRES_DB: copa_quiniela
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U quiniela"]
+      test: ["CMD-SHELL", "pg_isready -U copa_user -d copa_quiniela"]
       interval: 5s
       timeout: 3s
       retries: 5
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  whatsapp:
-    build:
-      context: ../..
-      dockerfile: apps/whatsapp/Dockerfile
-    restart: unless-stopped
-    environment:
-      WA_INTERNAL_TOKEN: ${WA_INTERNAL_TOKEN}
-      WA_AUTH_DIR: /app/auth_state
-    volumes:
-      - wa_auth:/app/auth_state
-    expose:
-      - "3001"
 
 volumes:
   pgdata:
-  wa_auth:

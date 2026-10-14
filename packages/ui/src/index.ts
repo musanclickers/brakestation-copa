@@ -6,5 +6,3 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export { Logo } from './Logo';
-export { PhotoUpload, type PhotoUploadProps } from './PhotoUpload';
-export { ClientSelector, type Client, type ClientSelectorProps } from './ClientSelector';
