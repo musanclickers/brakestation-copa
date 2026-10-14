@@ -18,16 +18,19 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const token = url.searchParams.get('token');
   const next = safeNext(url.searchParams.get('next'));
-  if (!token) redirect('/activar');
+  if (!token) redirect('/entrar');
 
   const result = verifyMagicToken(token);
-  if (!result) redirect('/activar?error=link_expired');
+  if (!result) redirect('/entrar?error=link_expired');
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, result.userId),
-    columns: { id: true },
+    columns: { id: true, emailVerified: true },
   });
-  if (!user) redirect('/activar');
+  if (!user) redirect('/entrar');
+  if (!user.emailVerified) {
+    await db.update(users).set({ emailVerified: new Date() }).where(eq(users.id, user.id));
+  }
 
   const sessionToken = randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -38,7 +41,8 @@ export async function GET(req: Request) {
     expires,
   });
 
-  const isSecure = url.protocol === 'https:';
+  // Detrás de Cloudflare/Traefik req.url puede llegar como http; AUTH_URL manda.
+  const isSecure = (process.env.AUTH_URL ?? url.href).startsWith('https:');
   const cookieName = isSecure ? '__Secure-authjs.session-token' : 'authjs.session-token';
 
   (await cookies()).set(cookieName, sessionToken, {
@@ -49,7 +53,5 @@ export async function GET(req: Request) {
     path: '/',
   });
 
-  if (next) redirect(next);
-  if (result.ticketCode) redirect(`/quiniela?ticket=${result.ticketCode}`);
-  redirect('/activar');
+  redirect(next ?? '/dashboard');
 }

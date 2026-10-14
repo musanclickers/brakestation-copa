@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx src/lib/score-match.test.ts && tsx src/lib/bracket.test.ts && tsx src/lib/rank-entries.test.ts && tsx src/lib/merida-datetime.test.ts && tsx src/lib/phases.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@brakestation/auth": "workspace:*",
@@ -28,6 +30,7 @@
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "tsx": "^4.10.0"
   }
 }

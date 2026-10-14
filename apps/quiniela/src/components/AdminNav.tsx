@@ -6,17 +6,14 @@ import { usePathname } from 'next/navigation';
 import { LogoutButton } from '@/app/admin/(protected)/LogoutButton';
 
 const NAV_LINKS = [
-  { href: '/admin/registrations', label: 'Registros' },
   { href: '/admin/matches', label: 'Partidos' },
-  { href: '/admin/phases', label: 'Fases' },
-  { href: '/admin/trivias', label: 'Trivias' },
+  { href: '/admin/phases', label: 'Jornadas' },
   { href: '/admin/notifications', label: 'Notificaciones' },
   { href: '/admin/ranking', label: 'Ranking' },
   { href: '/admin/links', label: 'Links' },
-  // { href: '/admin/whatsapp', label: 'WhatsApp' },
   { href: '/admin/users', label: 'Usuarios' },
   { href: '/admin/change-password', label: 'Contraseña' },
-  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/dashboard', label: 'Vista participante' },
 ] as const;
 
 export function AdminNav() {

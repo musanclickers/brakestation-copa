@@ -5,9 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    
     "./time": "./src/lib/formatMatchTime.ts",
-    "./teams": "./src/lib/teamDisplayName.ts",
     "./tailwind.config": "./tailwind.config.ts"
   },
   "dependencies": {
