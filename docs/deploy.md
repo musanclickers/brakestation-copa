@@ -38,7 +38,7 @@ openssl rand -base64 32   # ADMIN_COOKIE_SECRET
 ## 3. App en Coolify
 
 1. New Resource → Application → repositorio GitHub `musanclickers/brakestation-copa`, rama `main`.
-2. Build pack: **Dockerfile**. Dockerfile location: `apps/quiniela/Dockerfile`. Base directory: `/` (el build necesita todo el monorepo).
+2. Build pack: **Dockerfile**. Dockerfile location: `/Dockerfile` (en la raíz del repo; el build necesita todo el monorepo).
 3. Puerto expuesto: `3000`. Health check: `GET /api/health`.
 4. Dominio: `https://copa.brakestation.com.mx`.
 5. Red: la misma que `goleadora-postgres`, para que resuelva por nombre.
