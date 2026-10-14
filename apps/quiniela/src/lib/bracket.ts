@@ -1,62 +1,37 @@
-// Sin imports de DB: módulo puro, testeable con tsx.
-export const BRACKET_ROUNDS = [
-  { phase: 'r32', label: 'Dieciseisavos' },
-  { phase: 'r16', label: 'Octavos' },
-  { phase: 'qf', label: 'Cuartos' },
-  { phase: 'sf', label: 'Semifinales' },
-  { phase: 'final_phase', label: 'Final' },
-] as const;
+// Fase Final de la Copa (módulo puro, sin DB, testeable con tsx):
+//   F-SF1: 1° vs 4°   F-SF2: 2° vs 3°
+//   F-3ER: perdedor SF1 vs perdedor SF2
+//   F-FINAL: ganador SF1 vs ganador SF2
 
-export type BracketMatch = {
-  id: string;
-  matchCode: string;
-  phase: string;
-  homeTeam: string | null; // null = "Por definir"
-  awayTeam: string | null;
-  startsAt: string | null;
-  venueName: string | null;
+export type Team = { sponsor: string | null; refaccionaria: string };
+
+export type ScoredMatch = {
+  sponsorHome: string | null;
+  refaccionariaHome: string | null;
+  sponsorAway: string | null;
+  refaccionariaAway: string | null;
+  actualHomeScore: number | null;
+  actualAwayScore: number | null;
+  penaltyWinner: string | null;
 };
 
-// Orden VISUAL del bracket = posición en el árbol. Se indexa por el SLOT = sufijo
-// del match_code (WCM-<fase>-NNN), que es FIJO y no cambia si un admin corrige la
-// hora de un partido. (No usar startsAt: editar una fecha reordenaría el cuadro.)
-// El árbol real cruza R16-001 = ganador(R32-001) vs ganador(R32-004), etc.; esos
-// pares no son contiguos por número de slot, así que este arreglo los recoloca
-// contiguos para que las líneas conectoras cuadren con el bracket oficial
-// (verificado equipo a equipo contra el cuadro de Google del Mundial 2026).
-// ponytail: cuadro fijo del torneo; si FIFA reordenara el calendario, reverificar.
-const BRACKET_SLOT_ORDER: Record<string, number[]> = {
-  // R16-001←R32(1,4) · 002←(3,6) · 003←(9,10) · 004←(11,12)
-  // 005←(2,5) · 006←(7,8) · 007←(13,16) · 008←(14,15)
-  r32: [1, 4, 3, 6, 9, 10, 11, 12, 2, 5, 7, 8, 13, 16, 14, 15],
-  r16: [1, 2, 3, 4, 5, 6, 7, 8],
-  qf: [1, 2, 3, 4],
-  sf: [1, 2],
-  final_phase: [1],
-};
-
-function slotNumber(matchCode: string): number {
-  const m = matchCode.match(/(\d+)$/);
-  return m ? parseInt(m[1]!, 10) : 0;
+/** Ganador y perdedor de una semifinal; null si falta marcador, equipos o el desempate. */
+export function matchOutcome(m: ScoredMatch): { winner: Team; loser: Team } | null {
+  if (!m.refaccionariaHome || !m.refaccionariaAway) return null;
+  if (m.actualHomeScore == null || m.actualAwayScore == null) return null;
+  const home: Team = { sponsor: m.sponsorHome, refaccionaria: m.refaccionariaHome };
+  const away: Team = { sponsor: m.sponsorAway, refaccionaria: m.refaccionariaAway };
+  let homeWins: boolean;
+  if (m.actualHomeScore !== m.actualAwayScore) homeWins = m.actualHomeScore > m.actualAwayScore;
+  else if (m.penaltyWinner === 'home' || m.penaltyWinner === 'away') homeWins = m.penaltyWinner === 'home';
+  else return null; // empate sin serie de penales capturada
+  return homeWins ? { winner: home, loser: away } : { winner: away, loser: home };
 }
 
-/**
- * Agrupa los partidos en rondas ordenadas, y DENTRO de cada ronda los reordena a
- * su posición en el árbol del bracket (BRACKET_SLOT_ORDER), por SLOT (sufijo del
- * match_code), NO por fecha. Así los pares contiguos (i, i+1) alimentan el mismo
- * cruce de la ronda siguiente y las líneas conectoras de BracketView cuadran con
- * el cuadro oficial, sin importar que se editen horas. Solo reordena si la ronda
- * tiene exactamente los slots esperados; si no, deja el orden de entrada.
- */
-export function buildBracket(matches: BracketMatch[]) {
-  return BRACKET_ROUNDS.map((r) => {
-    const inRound = matches.filter((m) => m.phase === r.phase);
-    const order = BRACKET_SLOT_ORDER[r.phase];
-    const bySlot = new Map(inRound.map((m) => [slotNumber(m.matchCode), m]));
-    const matchesOrdered =
-      order && order.every((slot) => bySlot.has(slot))
-        ? order.map((slot) => bySlot.get(slot)!)
-        : inRound;
-    return { phase: r.phase, label: r.label, matches: matchesOrdered };
-  });
+/** Equipos de 3er lugar y Gran Final; null hasta que ambas semis estén resueltas. */
+export function finalPairings(sf1: ScoredMatch, sf2: ScoredMatch): { tercer: [Team, Team]; final: [Team, Team] } | null {
+  const a = matchOutcome(sf1);
+  const b = matchOutcome(sf2);
+  if (!a || !b) return null;
+  return { tercer: [a.loser, b.loser], final: [a.winner, b.winner] };
 }
