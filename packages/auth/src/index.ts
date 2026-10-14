@@ -40,8 +40,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      if (url.startsWith('/') && !url.startsWith('//')) return `${baseUrl}${url}`;
-      if (url.startsWith(baseUrl)) return url;
+      if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\')) return `${baseUrl}${url}`;
+      // Comparar origin exacto: startsWith dejaría pasar "https://copa...mx.evil.com".
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        // URL inválida: cae al default
+      }
       return `${baseUrl}/dashboard`;
     },
 

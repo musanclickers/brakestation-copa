@@ -1,6 +1,7 @@
 import { LegalPage, type LegalSection } from '@/components/LegalPage';
 
-export const metadata = { title: 'Reglamento de la Quiniela' };
+// TODO(legal): quitar robots noindex cuando Víctor apruebe el texto.
+export const metadata = { title: 'Reglamento de la Quiniela', robots: { index: false, follow: false } };
 
 // TODO(legal): BORRADOR. Víctor (comercial@brakestation.com.mx) lo revisa antes
 // del lanzamiento público. Premios pendientes de definir por el Comité.

@@ -10,7 +10,9 @@ export const dynamic = 'force-dynamic';
 
 function safeNext(raw: string | null): string | null {
   if (!raw) return null;
-  if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+  // Solo rutas relativas. Los navegadores tratan "\" como "/", así que "/\evil.com"
+  // sería un redirect a otro dominio.
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return null;
   return raw;
 }
 
