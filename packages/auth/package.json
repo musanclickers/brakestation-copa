@@ -1,0 +1,23 @@
+{
+  "name": "@brakestation/auth",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.2",
+    "@brakestation/db": "workspace:*",
+    "next-auth": "5.0.0-beta.25",
+    "resend": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "next": "^14.2.0",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "next": "^14.0.0 || ^15.0.0"
+  }
+}

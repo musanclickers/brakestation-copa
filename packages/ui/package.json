@@ -1,0 +1,21 @@
+{
+  "name": "@brakestation/ui",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./flags": "./src/lib/countryFlags.ts",
+    "./time": "./src/lib/formatMatchTime.ts",
+    "./teams": "./src/lib/teamDisplayName.ts",
+    "./tailwind.config": "./tailwind.config.ts"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.4.0"
+  }
+}

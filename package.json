@@ -1,0 +1,20 @@
+{
+  "name": "brakestation-mundial-2026",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "db:generate": "pnpm --filter @brakestation/db db:generate",
+    "db:migrate": "pnpm --filter @brakestation/db db:migrate",
+    "db:seed": "pnpm --filter @brakestation/db db:seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "packageManager": "pnpm@10.28.1",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "es5-ext"]
+  }
+}

@@ -1,0 +1,118 @@
+export const TEAM_TO_ISO: Record<string, string> = {
+  'Argentina': 'ar',
+  'Brazil': 'br',
+  'Uruguay': 'uy',
+  'Paraguay': 'py',
+  'Colombia': 'co',
+  'Ecuador': 'ec',
+  'Chile': 'cl',
+  'Peru': 'pe',
+  'Bolivia': 'bo',
+  'Venezuela': 've',
+  'Mexico': 'mx',
+  'United States': 'us',
+  'Canada': 'ca',
+  'Costa Rica': 'cr',
+  'Haiti': 'ht',
+  'Jamaica': 'jm',
+  'Honduras': 'hn',
+  'Panama': 'pa',
+  'El Salvador': 'sv',
+  'Trinidad and Tobago': 'tt',
+  'Spain': 'es',
+  'France': 'fr',
+  'Germany': 'de',
+  'England': 'gb-eng',
+  'Netherlands': 'nl',
+  'Portugal': 'pt',
+  'Italy': 'it',
+  'Belgium': 'be',
+  'Croatia': 'hr',
+  'Denmark': 'dk',
+  'Switzerland': 'ch',
+  'Austria': 'at',
+  'Scotland': 'gb-sct',
+  'Wales': 'gb-wls',
+  'Serbia': 'rs',
+  'Poland': 'pl',
+  'Turkey': 'tr',
+  'Ukraine': 'ua',
+  'Sweden': 'se',
+  'Hungary': 'hu',
+  'Czechia': 'cz',
+  'Norway': 'no',
+  'Slovenia': 'si',
+  'Albania': 'al',
+  'Slovakia': 'sk',
+  'Romania': 'ro',
+  'Greece': 'gr',
+  'Ireland': 'ie',
+  'Bosnia and Herzegovina': 'ba',
+  'Iceland': 'is',
+  'Georgia': 'ge',
+  'South Africa': 'za',
+  'Morocco': 'ma',
+  'Egypt': 'eg',
+  'Senegal': 'sn',
+  'Nigeria': 'ng',
+  'Cameroon': 'cm',
+  'Ghana': 'gh',
+  'Algeria': 'dz',
+  'Tunisia': 'tn',
+  'Ivory Coast': 'ci',
+  "Côte d'Ivoire": 'ci',
+  'DR Congo': 'cd',
+  'Congo DR': 'cd',
+  'Democratic Republic of Congo': 'cd',
+  'Cape Verde': 'cv',
+  'Cape Verde Islands': 'cv',
+  'Curaçao': 'cw',
+  'Curacao': 'cw',
+  'Mali': 'ml',
+  'Burkina Faso': 'bf',
+  'South Korea': 'kr',
+  'Korea Republic': 'kr',
+  'Japan': 'jp',
+  'Australia': 'au',
+  'Saudi Arabia': 'sa',
+  'Iran': 'ir',
+  'Qatar': 'qa',
+  'Iraq': 'iq',
+  'Uzbekistan': 'uz',
+  'China PR': 'cn',
+  'China': 'cn',
+  'Indonesia': 'id',
+  'Bahrain': 'bh',
+  'Jordan': 'jo',
+  'New Zealand': 'nz',
+  'USA': 'us',
+  'United States of America': 'us',
+  'Czech Republic': 'cz',
+  'Bosnia-Herzegovina': 'ba',
+  'Republic of Ireland': 'ie',
+  'Korea DPR': 'kp',
+  'Chinese Taipei': 'tw',
+  'UAE': 'ae',
+  'United Arab Emirates': 'ae',
+  'TBD': '',
+};
+
+export function getFlagUrl(teamName: string, size: 'sm' | 'md' | 'lg' = 'md'): string {
+  if (!teamName) return '/flag-placeholder.svg';
+
+  const normalized = teamName.trim();
+  const iso = TEAM_TO_ISO[normalized]
+    ?? Object.entries(TEAM_TO_ISO).find(
+      ([k]) => k.toLowerCase() === normalized.toLowerCase()
+    )?.[1];
+
+  if (!iso) {
+    if (typeof window !== 'undefined') {
+      console.warn(`[countryFlags] no ISO mapping for "${teamName}"`);
+    }
+    return '/flag-placeholder.svg';
+  }
+
+  const widths = { sm: 'w20', md: 'w40', lg: 'w80' };
+  return `https://flagcdn.com/${widths[size]}/${iso}.png`;
+}
