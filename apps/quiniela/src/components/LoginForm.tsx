@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Script from 'next/script';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { RELACIONES, RELACION_LABELS } from '@/lib/relacion';
 
 declare global {
   interface Window {
@@ -16,6 +17,7 @@ export function LoginForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
   const [mode, setMode] = useState<'registro' | 'entrar'>('registro');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [relacion, setRelacion] = useState('');
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,6 +28,8 @@ export function LoginForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
       email: String(fd.get('email') ?? ''),
       name: mode === 'registro' ? String(fd.get('name') ?? '') || undefined : undefined,
       terms: mode === 'registro' ? fd.get('terms') === 'on' : undefined,
+      relacion: mode === 'registro' ? relacion || undefined : undefined,
+      relacion_detalle: mode === 'registro' && relacion === 'otro' ? String(fd.get('relacion_detalle') ?? '') : undefined,
       turnstileToken: String(fd.get('cf-turnstile-response') ?? '') || undefined,
     };
     try {
@@ -69,6 +73,38 @@ export function LoginForm({ turnstileSiteKey }: { turnstileSiteKey: string }) {
             <input name="name" type="text" required minLength={2} maxLength={60} autoComplete="name" placeholder="Luis Martínez" className={input} />
             <span className="text-xs text-white/50">En el ranking solo se ve tu nombre y la inicial del apellido.</span>
           </label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium text-white/80">
+            ¿Cuál es tu relación con la Copa?
+            <select
+              name="relacion"
+              required
+              value={relacion}
+              onChange={(e) => setRelacion(e.target.value)}
+              onInvalid={(e) => e.currentTarget.setCustomValidity('Elige cuál es tu relación con la Copa.')}
+              onInput={(e) => e.currentTarget.setCustomValidity('')}
+              className={`${input} appearance-none ${relacion ? '' : 'text-white/40'}`}
+            >
+              <option value="" disabled className="text-gray-500">Elige una opción</option>
+              {RELACIONES.map((r) => (
+                <option key={r} value={r} className="text-gray-900">{RELACION_LABELS[r]}</option>
+              ))}
+            </select>
+          </label>
+          {relacion === 'otro' && (
+            <label className="flex flex-col gap-1.5 text-sm font-medium text-white/80">
+              ¿Cuál?
+              <input
+                name="relacion_detalle"
+                type="text"
+                required
+                minLength={3}
+                maxLength={100}
+                autoFocus
+                placeholder="ej. colaborador de un patrocinador"
+                className={input}
+              />
+            </label>
+          )}
           <label className="flex items-start gap-3 text-sm text-white/80">
             <input name="terms" type="checkbox" required className="mt-1 h-4 w-4 accent-brand-red" />
             <span>

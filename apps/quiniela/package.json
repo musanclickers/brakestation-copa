@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx src/lib/score-match.test.ts && tsx src/lib/bracket.test.ts && tsx src/lib/rank-entries.test.ts && tsx src/lib/merida-datetime.test.ts && tsx src/lib/phases.test.ts",
+    "test": "tsx src/lib/score-match.test.ts && tsx src/lib/bracket.test.ts && tsx src/lib/rank-entries.test.ts && tsx src/lib/merida-datetime.test.ts && tsx src/lib/phases.test.ts && tsx src/lib/relacion.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

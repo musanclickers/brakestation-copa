@@ -43,6 +43,8 @@ export const users = pgTable('users', {
   isAdmin: boolean('is_admin').notNull().default(false),
   adminPasswordHash: text('admin_password_hash'),
   mustChangePassword: boolean('must_change_password').notNull().default(false),
+  relacion: text('relacion'),
+  relacionDetalle: varchar('relacion_detalle', { length: 100 }),
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).notNull().defaultNow(),
 });
 

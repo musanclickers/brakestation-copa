@@ -4,7 +4,21 @@ import { PHASE_ORDER, isMatchOpen } from '@brakestation/db/phases';
 import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import { z } from 'zod';
 
-export type Recipient = { email: string; name: string; userId: string | null };
+export type Recipient = {
+  email: string;
+  name: string;
+  userId: string | null;
+  relacion?: string | null;
+  relacionDetalle?: string | null;
+};
+
+const cols = {
+  email: users.email,
+  name: users.name,
+  userId: users.id,
+  relacion: users.relacion,
+  relacionDetalle: users.relacionDetalle,
+};
 
 // Única definición de audiencias: la validan count, export y send, así que el
 // CSV nunca difiere de a quién le llega el correo.
@@ -19,10 +33,10 @@ export type AudienceSpec = z.infer<typeof AudienceSchema>;
 
 async function registered(): Promise<Recipient[]> {
   const rows = await db
-    .select({ email: users.email, name: users.name, userId: users.id })
+    .select(cols)
     .from(users)
     .where(isNotNull(users.termsAcceptedAt));
-  return rows.map((r) => ({ email: r.email, name: r.name ?? '', userId: r.userId }));
+  return rows.map((r) => ({ ...r, name: r.name ?? '' }));
 }
 
 /** Registrados a los que les falta pronosticar algún partido que sigue abierto. */
@@ -42,24 +56,24 @@ async function missingOpenPredictions(): Promise<Recipient[]> {
 /** Quienes guardaron al menos un pronóstico de esa jornada. */
 async function predictedPhase(phase: string): Promise<Recipient[]> {
   const rows = await db
-    .selectDistinct({ email: users.email, name: users.name, userId: users.id })
+    .selectDistinct(cols)
     .from(matchPredictions)
     .innerJoin(matches, eq(matches.id, matchPredictions.matchId))
     .innerJoin(users, eq(users.id, matchPredictions.userId))
     .where(and(eq(matches.phase, phase)));
-  return rows.map((r) => ({ email: r.email, name: r.name ?? '', userId: r.userId }));
+  return rows.map((r) => ({ ...r, name: r.name ?? '' }));
 }
 
 async function explicitEmails(emails: string[]): Promise<Recipient[]> {
   const normalized = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
   const rows = await db
-    .select({ email: users.email, name: users.name, userId: users.id })
+    .select(cols)
     .from(users)
     .where(inArray(users.email, normalized));
   const found = new Map(rows.map((r) => [r.email, r]));
   return normalized.map((e) => {
     const r = found.get(e);
-    return { email: e, name: r?.name ?? '', userId: r?.userId ?? null };
+    return r ? { ...r, name: r.name ?? '' } : { email: e, name: '', userId: null };
   });
 }
 

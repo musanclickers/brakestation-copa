@@ -2,6 +2,7 @@ import { getAdminUserId } from '@/lib/admin-auth';
 import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
 import { AudienceSchema, resolveAudience } from '@/lib/notification-audiences';
 import { NextResponse } from 'next/server';
+import { RELACION_LABELS, isRelacion } from '@/lib/relacion';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -26,8 +27,10 @@ export async function POST(req: Request) {
   const { spec } = parsed.data;
 
   const recipients = await resolveAudience(spec);
-  const rows = recipients.map((r) => [r.name, r.email].map(escapeCsv).join(','));
-  const csv = '﻿' + ['Nombre,Email', ...rows].join('\r\n');
+  const rows = recipients.map((r) =>
+    [r.name, r.email, isRelacion(r.relacion) ? RELACION_LABELS[r.relacion] : '', r.relacionDetalle].map(escapeCsv).join(','),
+  );
+  const csv = '﻿' + ['Nombre,Email,Relación,Detalle', ...rows].join('\r\n');
 
   return new Response(csv, {
     headers: {

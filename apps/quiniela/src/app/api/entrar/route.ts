@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { rateLimit, clientIp } from '@/lib/rate-limit';
 import { verifyTurnstile } from '@/lib/turnstile';
 import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
+import { RelacionSchema } from '@/lib/relacion-schema';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -17,6 +18,8 @@ const schema = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
   name: z.string().trim().min(2).max(60).optional(),
   terms: z.boolean().optional(),
+  relacion: z.string().max(40).optional(),
+  relacion_detalle: z.string().max(100).optional(),
   turnstileToken: z.string().max(4096).optional(),
 });
 
@@ -66,10 +69,27 @@ export async function POST(req: Request) {
     );
   }
 
+  // Solo se pide al registrarse; el login de alguien ya registrado no la manda.
+  let rel: { relacion: string; relacionDetalle: string | null } | undefined;
+  if (needsRegistration) {
+    const r = RelacionSchema.safeParse({ relacion: parsed.data.relacion, relacion_detalle: parsed.data.relacion_detalle });
+    if (!r.success) {
+      const otro = r.error.issues.some((i) => i.path[0] === 'relacion_detalle');
+      return Response.json(
+        {
+          error: 'invalid_relacion',
+          message: otro ? r.error.issues[0]!.message : 'Elige cuál es tu relación con la Copa.',
+        },
+        { status: 400 },
+      );
+    }
+    rel = { relacion: r.data.relacion, relacionDetalle: r.data.relacion_detalle };
+  }
+
   if (!user) {
     const inserted = await db
       .insert(users)
-      .values({ email, name, termsAcceptedAt: new Date(), registrationIp: ip })
+      .values({ email, name, termsAcceptedAt: new Date(), registrationIp: ip, ...rel })
       .returning({ id: users.id, name: users.name, termsAcceptedAt: users.termsAcceptedAt });
     user = inserted[0]!;
     await db.insert(auditLog).values({
@@ -81,7 +101,7 @@ export async function POST(req: Request) {
   } else if (needsRegistration) {
     await db
       .update(users)
-      .set({ name: user.name ?? name, termsAcceptedAt: new Date(), registrationIp: ip })
+      .set({ name: user.name ?? name, termsAcceptedAt: new Date(), registrationIp: ip, ...rel })
       .where(eq(users.id, user.id));
   }
 
