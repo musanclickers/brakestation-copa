@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { formatMatchTime, formatCountdown } from '@brakestation/ui/time';
 import { BrandHeader } from '@/components/BrandHeader';
+import { TeamLabel } from '@/components/TeamLabel';
 import { SiteFooter } from '@/components/SiteFooter';
 import { getAuthUser } from '@/lib/get-auth-user';
 import { computeRanking } from '@/lib/compute-ranking';
@@ -77,7 +78,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             className="block rounded-3xl bg-gradient-to-r from-brand-red to-[#b5161a] p-5 sm:p-6 shadow-[0_10px_30px_rgba(227,33,37,0.35)] hover:-translate-y-0.5 transition-transform"
           >
             <p className="text-xs uppercase tracking-widest text-white/80">Te falta pronosticar</p>
-            <p className="text-lg sm:text-xl font-black text-white mt-1">{nextPending.home} vs {nextPending.away}</p>
+            <div className="flex items-center gap-3 mt-3 mb-2">
+              <div className="flex-1 min-w-0"><TeamLabel sponsor={nextPending.sponsorHome} refaccionaria={nextPending.refaccionariaHome} align="right" size="lg" /></div>
+              <span className="text-white/70 text-sm font-black">vs</span>
+              <div className="flex-1 min-w-0"><TeamLabel sponsor={nextPending.sponsorAway} refaccionaria={nextPending.refaccionariaAway} align="left" size="lg" /></div>
+            </div>
             <p className="text-sm text-white/85 mt-1">
               {formatMatchTime(nextPending.startsAt).short} · {formatMatchTime(nextPending.startsAt).time} h ·{' '}
               {formatCountdown(lockoutAt(nextPending.startsAt).getTime() - now.getTime())} para que cierre

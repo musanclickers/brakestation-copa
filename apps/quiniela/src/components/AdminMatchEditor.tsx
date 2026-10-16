@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { formatMatchTime } from '@brakestation/ui/time';
 import { utcIsoToMeridaInput, meridaInputToUtcIso } from '@/lib/merida-datetime';
 import type { SerializedMatch } from '@/lib/matches';
+import { TeamLabel } from './TeamLabel';
 
 const PHASE_LABELS: Record<string, string> = {
   j1: 'Jornada 1', j2: 'Jornada 2', j3: 'Jornada 3', j4: 'Jornada 4',
@@ -52,11 +53,11 @@ function MatchRow({ m }: { m: SerializedMatch }) {
         <span>{t.short} · {t.time} h</span>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <span className="flex-1 min-w-[8rem] text-right text-sm font-semibold text-white">{m.home ?? 'Por definir'}</span>
+        <div className="flex-1 min-w-[8rem] flex justify-end"><TeamLabel sponsor={m.sponsorHome} refaccionaria={m.refaccionariaHome} align="right" size="sm" layout="horizontal" /></div>
         <input type="number" min={0} max={20} value={home} onChange={(e) => setHome(e.target.value)} className={input} aria-label="Goles local" disabled={!m.home} />
         <span className="text-white/40">–</span>
         <input type="number" min={0} max={20} value={away} onChange={(e) => setAway(e.target.value)} className={input} aria-label="Goles visitante" disabled={!m.home} />
-        <span className="flex-1 min-w-[8rem] text-sm font-semibold text-white">{m.away ?? 'Por definir'}</span>
+        <div className="flex-1 min-w-[8rem]"><TeamLabel sponsor={m.sponsorAway} refaccionaria={m.refaccionariaAway} align="left" size="sm" layout="horizontal" /></div>
       </div>
       {needsPenalty && (
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-amber-200">
