@@ -21,7 +21,7 @@ const p = (html: string) => `<p style="margin:0 0 16px 0;color:#4a4a4a;font-size
 const scoringBox = [
   '<div style="margin:28px 0 0 0;padding:16px 20px;background-color:#F4F4F4;border-left:3px solid #3A63A8;border-radius:4px;">',
   '<p style="margin:0 0 6px 0;color:#232124;font-size:14px;font-weight:700;">Cómo se gana</p>',
-  `<p style="margin:0;color:#4a4a4a;font-size:13px;line-height:1.7;">${POINTS.exact} puntos por marcador exacto. ${POINTS.result} por acertar quién gana o el empate. Cada partido cierra ${LOCKOUT_MINUTES} minutos antes de empezar.</p>`,
+  `<p style="margin:0;color:#4a4a4a;font-size:13px;line-height:1.7;">${POINTS.exact} puntos por marcador exacto. ${POINTS.result} por acertar quién gana o el empate. Cada jornada cierra ${LOCKOUT_MINUTES} minutos antes de su primer partido.</p>`,
   '</div>',
 ].join('');
 
@@ -34,7 +34,7 @@ const recordatorio: NotificationTemplate = {
     return wrapBranded(this.preheader, [
       hola(name),
       p('Todavía hay partidos de la Copa Brake Station sin tu pronóstico. Te toma un minuto llenarlos desde el celular.'),
-      p(`Ojo: cada partido cierra ${LOCKOUT_MINUTES} minutos antes de que empiece y ya no se puede cambiar.`),
+      p(`Ojo: la jornada completa cierra ${LOCKOUT_MINUTES} minutos antes de su primer partido y después ya no se puede cambiar nada.`),
       emailButton(quinielaLink, 'Pronosticar ahora →'),
       scoringBox,
     ].join(''));

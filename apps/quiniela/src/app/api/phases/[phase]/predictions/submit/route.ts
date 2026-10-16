@@ -1,7 +1,7 @@
 import { auth, sendEmail } from '@brakestation/auth';
 import { db } from '@brakestation/db';
 import { matches, matchPredictions, phaseSubmissions, auditLog } from '@brakestation/db/schema';
-import { isPhase, isMatchOpen, isMatchLocked, homeName, awayName, PHASE_LABELS } from '@brakestation/db/phases';
+import { isPhase, isMatchOpen, isPhaseLocked, homeName, awayName, PHASE_LABELS } from '@brakestation/db/phases';
 import { generatePhaseSeal, generateSeal } from '@brakestation/seal';
 import { eq, and } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
@@ -24,9 +24,9 @@ const BodySchema = z.object({
     .max(8),
 });
 
-// Guarda (upsert) pronósticos de una jornada. Cada partido se puede editar hasta
-// su propio lockout (15 min antes); que un partido de la jornada ya haya cerrado
-// no bloquea a los demás. Cada guardado regenera el sello de la jornada.
+// Guarda (upsert) pronósticos de una jornada. La jornada entera cierra 15 min
+// antes de su primer partido; hasta entonces cualquier partido se puede editar.
+// Cada guardado regenera el sello de la jornada.
 export async function POST(req: Request, { params }: { params: Promise<{ phase: string }> }) {
   if (!isSameOrigin(req)) return forbiddenOrigin();
 
@@ -47,19 +47,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ phase: 
   const byId = new Map(phaseMatches.map((m) => [m.id, m]));
   const now = new Date();
 
+  if (isPhaseLocked(phaseMatches, now)) {
+    await db.insert(auditLog).values({ eventType: 'submit_blocked', userId, payload: { phase, reason: 'phase_locked' } });
+    return NextResponse.json(
+      { error: 'phase_locked', message: `${PHASE_LABELS[phase]} ya cerró: los pronósticos se cierran 15 minutos antes del primer partido.` },
+      { status: 400 },
+    );
+  }
+
   for (const p of predictions) {
     const m = byId.get(p.match_id);
     if (!m) {
       return NextResponse.json({ error: 'validation', message: 'Ese partido no es de esta jornada.' }, { status: 400 });
     }
-    if (isMatchLocked(m.startsAt, now)) {
-      await db.insert(auditLog).values({ eventType: 'submit_blocked', userId, payload: { phase, match: m.matchCode, reason: 'locked' } });
-      return NextResponse.json(
-        { error: 'match_locked', message: `${homeName(m) ?? m.displayLabel} vs ${awayName(m) ?? ''} ya no acepta pronósticos: cerró 15 minutos antes de empezar.` },
-        { status: 409 },
-      );
-    }
-    if (!isMatchOpen(m, now)) {
+    if (!isMatchOpen(m, phaseMatches, now)) {
       return NextResponse.json({ error: 'teams_not_loaded', message: 'Este partido todavía no tiene equipos definidos.' }, { status: 409 });
     }
     // Fase final: no hay empates (se definen en penales), hay que elegir ganador.
@@ -125,7 +126,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ phase: 
     const picks = allPreds
       .map((r) => ({ m: byId.get(r.matchId)!, h: r.h, a: r.a }))
       .sort((x, y) => x.m.startsAt.getTime() - y.m.startsAt.getTime())
-      .map(({ m, h, a }) => ({ home: homeName(m) ?? '', away: awayName(m) ?? '', h, a }));
+      .map(({ m, h, a }) => ({ home: homeName(m) ?? 'Por definir', away: awayName(m) ?? 'Por definir', h, a }));
     await sendEmail({
       to: session.user.email!,
       subject: `Tus pronósticos de ${PHASE_LABELS[phase]} · Copa Brake Station`,

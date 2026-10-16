@@ -36,7 +36,7 @@ export default async function AdminPhasesPage() {
       <div>
         <h1 className="font-display text-3xl text-white mb-1">Jornadas</h1>
         <p className="text-white/80 text-sm">
-          Cada partido cierra pronósticos 15 minutos antes de empezar. No hay que abrir ni cerrar nada a mano.
+          Cada jornada cierra pronósticos 15 minutos antes de su primer partido. No hay que abrir ni cerrar nada a mano.
         </p>
       </div>
 
@@ -52,7 +52,7 @@ export default async function AdminPhasesPage() {
                 <tr key={p} className="border-t border-white/10">
                   <td className="p-3 font-semibold">{PHASE_LABELS[p]}</td>
                   <td className="p-3 text-center">{ms.length}</td>
-                  <td className="p-3 text-center">{ms.filter((m) => isMatchOpen(m)).length}</td>
+                  <td className="p-3 text-center">{ms.filter((m) => isMatchOpen(m, ms)).length}</td>
                   <td className="p-3 text-center">{ms.filter((m) => m.actualHomeScore != null).length}</td>
                   <td className="p-3 text-center">{countBy.get(p) ?? 0}</td>
                 </tr>

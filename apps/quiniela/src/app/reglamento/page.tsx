@@ -40,7 +40,7 @@ const SECTIONS: LegalSection[] = [
     id: 'cierre',
     title: 'Cierre de pronósticos',
     content:
-      '<p>Cada partido deja de aceptar pronósticos <strong>15 minutos antes</strong> de su hora de inicio (hora de Mérida). Hasta ese momento puedes cambiar tu pronóstico las veces que quieras; cuenta el último que guardaste.</p><p>Cada partido cierra por separado: que ya haya empezado un partido de la jornada no impide cambiar los que faltan.</p><p>Cada vez que guardas te llega un comprobante con un sello digital. Si el Comité cambia la hora de un partido, el cierre se mueve con él.</p>',
+      '<p>Cada jornada deja de aceptar pronósticos <strong>15 minutos antes de su primer partido</strong> (hora de Mérida). Todos los partidos de la jornada cierran al mismo tiempo, aunque se jueguen más tarde o al día siguiente. Hasta ese momento puedes cambiar tus pronósticos las veces que quieras; cuenta el último que guardaste.</p><p>En la Fase Final pasa lo mismo: los cuatro partidos cierran 15 minutos antes de la primera semifinal. El tercer lugar y la Gran Final se pronostican antes de saber qué equipos los juegan, porque salen de los resultados de las semifinales.</p><p>Cada vez que guardas te llega un comprobante con un sello digital. Si el Comité cambia la hora de un partido, el cierre se mueve con él.</p>',
   },
   {
     id: 'fase-final',

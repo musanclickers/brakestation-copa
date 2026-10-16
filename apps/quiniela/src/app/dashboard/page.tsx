@@ -1,6 +1,6 @@
 import { db } from '@brakestation/db';
 import { phaseSubmissions, matchPredictions } from '@brakestation/db/schema';
-import { PHASE_ORDER, PHASE_LABELS, isMatchOpen, isMatchLocked, lockoutAt, type Phase } from '@brakestation/db/phases';
+import { PHASE_ORDER, PHASE_LABELS, isMatchOpen, isPhaseLocked, phaseLockoutAt, type Phase } from '@brakestation/db/phases';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -35,7 +35,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const me = myIndex >= 0 ? ranking[myIndex] : null;
 
   // Próximo partido abierto sin pronóstico: lo que más le importa al usuario.
-  const pending = allMatches.filter((m) => isMatchOpen(m, now) && !predicted.has(m.id));
+  const pending = allMatches.filter((m) => isMatchOpen(m, allMatches, now) && !predicted.has(m.id));
   const nextPending = pending[0];
 
   return (
@@ -85,7 +85,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </div>
             <p className="text-sm text-white/85 mt-1">
               {formatMatchTime(nextPending.startsAt).short} · {formatMatchTime(nextPending.startsAt).time} h ·{' '}
-              {formatCountdown(lockoutAt(nextPending.startsAt).getTime() - now.getTime())} para que cierre
+              {formatCountdown(phaseLockoutAt(allMatches.filter((m) => m.phase === nextPending.phase))!.getTime() - now.getTime())} para que cierre la jornada
               {pending.length > 1 && ` · y ${pending.length - 1} más`}
             </p>
           </Link>
@@ -107,8 +107,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   function renderPhase(phase: Phase) {
     const ms = allMatches.filter((m) => m.phase === phase);
     const done = ms.filter((m) => predicted.has(m.id)).length;
-    const open = ms.filter((m) => isMatchOpen(m, now)).length;
-    const allLocked = ms.length > 0 && ms.every((m) => isMatchLocked(m.startsAt, now));
+    const open = ms.filter((m) => isMatchOpen(m, ms, now)).length;
+    const allLocked = ms.length > 0 && isPhaseLocked(ms, now);
     const unassigned = ms.some((m) => m.home === null);
     const first = ms[0] ? formatMatchTime(ms[0].startsAt).short : '';
     const sub = subByPhase.get(phase);

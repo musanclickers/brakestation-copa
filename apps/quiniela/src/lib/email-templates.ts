@@ -27,6 +27,6 @@ export function comprobanteHtml(args: {
     `<p style="margin:0;color:#4a4a4a;font-size:13px;">Guardado el ${dateStr} (hora de Mérida)</p>`,
     '</td></tr></table>',
     `<p style="margin:0 0 24px 0;text-align:center;"><a href="${verifyUrl}" style="color:#3A63A8;text-decoration:underline;font-weight:600;">Ver mi comprobante →</a></p>`,
-    `<p style="border-top:1px solid #E5E5E5;padding-top:16px;color:#666;font-size:12px;line-height:1.6;">Puedes cambiar cada pronóstico hasta ${LOCKOUT_MINUTES} minutos antes de que empiece ese partido. Si lo cambias, te llega un comprobante nuevo con otro sello y el anterior deja de valer.</p>`,
+    `<p style="border-top:1px solid #E5E5E5;padding-top:16px;color:#666;font-size:12px;line-height:1.6;">Puedes cambiar tus pronósticos hasta ${LOCKOUT_MINUTES} minutos antes del primer partido de la jornada. Si lo cambias, te llega un comprobante nuevo con otro sello y el anterior deja de valer.</p>`,
   ].join(''));
 }

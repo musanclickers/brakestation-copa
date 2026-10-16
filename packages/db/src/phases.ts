@@ -34,17 +34,10 @@ export function phaseGroupLabel(phase: Phase): string {
   return phase === 'final' ? 'Fase Final' : 'Fase Regular';
 }
 
-// ─── Lockout: 15 min antes de cada partido, individual ─────────
+// ─── Lockout: por jornada (ver lockout.ts) ──────────────────────
 
-export const LOCKOUT_MINUTES = 15;
-
-export function lockoutAt(startsAt: Date | string): Date {
-  return new Date(new Date(startsAt).getTime() - LOCKOUT_MINUTES * 60_000);
-}
-
-export function isMatchLocked(startsAt: Date | string, now: Date = new Date()): boolean {
-  return now.getTime() >= lockoutAt(startsAt).getTime();
-}
+export { LOCKOUT_MINUTES, lockoutAt, isMatchLocked, phaseLockoutAt, isPhaseLocked, teamsAssigned, isMatchOpen } from './lockout';
+import { isMatchOpen, isPhaseLocked, teamsAssigned } from './lockout';
 
 // ─── Equipos ────────────────────────────────────────────────────
 
@@ -69,15 +62,6 @@ export function awayName(m: MatchTeams): string | null {
   return teamName(m.sponsorAway, m.refaccionariaAway);
 }
 
-export function teamsAssigned(m: MatchTeams): boolean {
-  return Boolean(m.refaccionariaHome && m.refaccionariaAway);
-}
-
-/** Se puede pronosticar: equipos definidos y todavía no llega el lockout. */
-export function isMatchOpen(m: MatchTeams & { startsAt: Date | string }, now: Date = new Date()): boolean {
-  return teamsAssigned(m) && !isMatchLocked(m.startsAt, now);
-}
-
 // ─── Estado de una jornada ──────────────────────────────────────
 
 export type PhaseOpenResult = {
@@ -87,8 +71,8 @@ export type PhaseOpenResult = {
 
 export async function isPhaseOpen(phase: Phase, now: Date = new Date()): Promise<PhaseOpenResult> {
   const rows = await db.select().from(matches).where(eq(matches.phase, phase));
-  if (rows.some((m) => isMatchOpen(m, now))) return { open: true };
-  if (rows.some((m) => !teamsAssigned(m) && !isMatchLocked(m.startsAt, now))) {
+  if (rows.some((m) => isMatchOpen(m, rows, now))) return { open: true };
+  if (!isPhaseLocked(rows, now) && rows.some((m) => !teamsAssigned(m))) {
     return { open: false, reason: 'teams_not_loaded' };
   }
   return { open: false, reason: 'all_matches_locked' };
@@ -98,7 +82,7 @@ export async function isPhaseOpen(phase: Phase, now: Date = new Date()): Promise
 export async function getCurrentPhase(now: Date = new Date()): Promise<Phase | null> {
   const rows = await db.select().from(matches);
   for (const phase of PHASE_ORDER) {
-    if (rows.some((m) => m.phase === phase && isMatchOpen(m, now))) return phase;
+    if (rows.some((m) => m.phase === phase && isMatchOpen(m, rows, now))) return phase;
   }
   return null;
 }

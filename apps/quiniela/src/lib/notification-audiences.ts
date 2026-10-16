@@ -41,7 +41,8 @@ async function registered(): Promise<Recipient[]> {
 
 /** Registrados a los que les falta pronosticar algún partido que sigue abierto. */
 async function missingOpenPredictions(): Promise<Recipient[]> {
-  const openIds = (await db.select().from(matches)).filter((m) => isMatchOpen(m)).map((m) => m.id);
+  const all = await db.select().from(matches);
+  const openIds = all.filter((m) => isMatchOpen(m, all)).map((m) => m.id);
   if (openIds.length === 0) return [];
   const base = await registered();
   const preds = await db

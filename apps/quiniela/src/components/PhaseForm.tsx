@@ -5,6 +5,7 @@ import { BrandHeader } from './BrandHeader';
 import { SiteFooter } from './SiteFooter';
 import { TeamLabel } from './TeamLabel';
 import { formatMatchTime, formatCountdown } from '@brakestation/ui/time';
+import { phaseLockoutAt, isMatchOpen } from '@brakestation/db/lockout';
 import { scoreMeta } from '@/lib/score-match';
 import type { SerializedMatch } from '@/lib/matches';
 
@@ -16,7 +17,6 @@ const PHASE_LABELS: Record<Phase, string> = {
   j1: 'Jornada 1', j2: 'Jornada 2', j3: 'Jornada 3', j4: 'Jornada 4',
   j5: 'Jornada 5', j6: 'Jornada 6', j7: 'Jornada 7', final: 'Fase Final',
 };
-const LOCKOUT_MS = 15 * 60_000;
 
 type Submission = { phase: string; phaseSeal: string; submittedAt: string; matchesInPhase: number };
 type Scores = Record<string, { h?: number; a?: number }>;
@@ -46,9 +46,10 @@ export function PhaseForm({ currentPhase, allMatches, submissions, existingPredi
   }, []);
 
   const phaseMatches = useMemo(() => allMatches.filter((m) => m.phase === activeTab), [allMatches, activeTab]);
-  const lockAt = (m: SerializedMatch) => new Date(m.startsAt).getTime() - LOCKOUT_MS;
-  const isLocked = (m: SerializedMatch) => now >= lockAt(m);
-  const isOpen = (m: SerializedMatch) => !isLocked(m) && m.home !== null && m.away !== null;
+  // Toda la jornada cierra junta, 15 min antes de su primer partido.
+  const lockDate = phaseLockoutAt(phaseMatches);
+  const phaseLocked = !lockDate || now >= lockDate.getTime();
+  const isOpen = (m: SerializedMatch) => isMatchOpen(m, phaseMatches, new Date(now));
   const openMatches = phaseMatches.filter(isOpen);
   const isFinal = activeTab === 'final';
 
@@ -164,7 +165,7 @@ export function PhaseForm({ currentPhase, allMatches, submissions, existingPredi
             <p className="text-[11px] uppercase tracking-widest text-brand-gold">{isFinal ? 'Fase Final' : 'Fase Regular'}</p>
             <h2 className="text-white font-bold text-xl">{PHASE_LABELS[activeTab]}</h2>
             <p className="text-white/60 text-sm mt-1">
-              Cada partido cierra 15 minutos antes de empezar. Hasta entonces puedes cambiar tu pronóstico las veces que quieras.
+              Todos los partidos de la jornada cierran juntos, 15 minutos antes del primero. Hasta entonces puedes cambiar tus pronósticos las veces que quieras.
               {isFinal && ' Aquí no hay empates: elige quién gana (vale aunque se defina en penales).'}
             </p>
             <p className="text-white/80 text-sm mt-2">
@@ -172,6 +173,30 @@ export function PhaseForm({ currentPhase, allMatches, submissions, existingPredi
               {sub && <> Sello actual: <a href={`/verifica/${sub.phaseSeal.slice(0, 8)}`} className="font-mono text-brand-gold underline">{sub.phaseSeal.slice(0, 8)}</a></>}
             </p>
           </div>
+
+          {lockDate && phaseLocked ? (
+            <div role="status" className="mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-amber-200 font-bold">🔒 Jornada cerrada</p>
+                <p className="text-amber-100/80 text-sm">Ya no se pueden cambiar los pronósticos. Los que guardaste siguen valiendo.</p>
+              </div>
+              {sub && (
+                <a href={`/verifica/${sub.phaseSeal.slice(0, 8)}`} className="rounded-xl border border-amber-300/50 px-4 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-400/10">
+                  Ver mi comprobante
+                </a>
+              )}
+            </div>
+          ) : lockDate && openMatches.length > 0 ? (
+            <div
+              role="status"
+              className={`mb-6 rounded-2xl border p-4 ${lockDate.getTime() - now < 60 * 60_000 ? 'border-amber-400/60 bg-amber-500/10 text-amber-200' : 'border-white/15 bg-white/[0.06] text-white/85'}`}
+            >
+              <p className="font-semibold">
+                Cierra el {formatMatchTime(lockDate.toISOString()).short} a las {formatMatchTime(lockDate.toISOString()).time} h
+                <span className="font-normal opacity-80"> · {formatCountdown(lockDate.getTime() - now)}</span>
+              </p>
+            </div>
+          ) : null}
 
           {result && (
             <div role="status" className="backdrop-blur-xl bg-green-500/10 border border-green-400/30 rounded-2xl p-4 mb-6">
@@ -210,14 +235,12 @@ export function PhaseForm({ currentPhase, allMatches, submissions, existingPredi
 
   function renderMatchCard(m: SerializedMatch) {
     const { short: dateStr, time: timeStr } = formatMatchTime(m.startsAt);
-    const locked = isLocked(m);
+    const locked = phaseLocked;
     const open = isOpen(m);
     const s = scores[m.id];
     const pred = saved[m.id];
     const done = m.actualHomeScore != null && m.actualAwayScore != null;
     const meta = done && pred ? scoreMeta(pred.h, pred.a, m.actualHomeScore!, m.actualAwayScore!, m.penaltyWinner) : null;
-    const countdown = formatCountdown(lockAt(m) - now);
-    const closingSoon = !locked && lockAt(m) - now < 60 * 60_000;
     const isDraw = drawIds.has(m.id);
     const unsaved = open && complete(s) && (!pred || pred.h !== s!.h || pred.a !== s!.a);
 
@@ -239,11 +262,11 @@ export function PhaseForm({ currentPhase, allMatches, submissions, existingPredi
           {open && !readOnly ? (
             <>
               <input type="number" inputMode="numeric" min={0} max={20} value={s?.h ?? ''} placeholder="–"
-                onChange={(e) => updateScore(m.id, 'h', e.target.value)} aria-label={`Goles de ${m.home}`}
+                onChange={(e) => updateScore(m.id, 'h', e.target.value)} aria-label={`Goles de ${m.home ?? 'local'}`}
                 className={`${box} bg-white/[0.15] border border-white/20 text-white placeholder:text-white/30 focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/40`} />
               <span className="text-white/30 text-xs font-bold">vs</span>
               <input type="number" inputMode="numeric" min={0} max={20} value={s?.a ?? ''} placeholder="–"
-                onChange={(e) => updateScore(m.id, 'a', e.target.value)} aria-label={`Goles de ${m.away}`}
+                onChange={(e) => updateScore(m.id, 'a', e.target.value)} aria-label={`Goles de ${m.away ?? 'visitante'}`}
                 className={`${box} bg-white/[0.15] border border-white/20 text-white placeholder:text-white/30 focus:border-brand-red focus:outline-none focus:ring-2 focus:ring-brand-red/40`} />
             </>
           ) : (
@@ -271,12 +294,12 @@ export function PhaseForm({ currentPhase, allMatches, submissions, existingPredi
             </>
           ) : locked ? (
             <span className="text-amber-300/90 font-semibold">🔒 Pronósticos cerrados{pred ? '' : ' · no alcanzaste a pronosticar'}</span>
-          ) : m.home === null ? (
+          ) : !open ? (
             <span className="text-white/50">Los equipos se definen al terminar la jornada 7.</span>
           ) : (
             <>
-              <span className={closingSoon ? 'text-amber-300 font-semibold' : 'text-white/50'}>
-                {countdown} para que cierre
+              <span className="text-white/50">
+                {m.home === null && 'Los equipos salen de las semifinales del sábado. Puedes poner tu marcador desde ahora.'}
               </span>
               {isDraw ? <span className="text-amber-300 font-medium">Elige un ganador</span>
                 : unsaved ? <span className="text-brand-gold font-medium">Sin guardar</span>
