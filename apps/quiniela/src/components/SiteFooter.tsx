@@ -7,6 +7,7 @@ export function SiteFooter() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm">
           <div className="text-white/60 text-center sm:text-left">© 2026 Copa Brake Station</div>
           <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+            <Link href="/tabla" className="text-white/80 hover:text-white">Tabla de posiciones</Link>
             <Link href="/reglamento" className="text-white/80 hover:text-white">Reglamento</Link>
             <Link href="/privacidad" className="text-white/80 hover:text-white">Aviso de privacidad</Link>
             <a href="mailto:comercial@brakestation.com.mx" className="text-white/80 hover:text-white">Contacto</a>
