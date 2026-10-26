@@ -61,7 +61,7 @@ export default async function TablaPage() {
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         <div className="text-center mb-6">
-          <h1 className="font-display text-4xl sm:text-5xl text-white">Tabla de posiciones · Copa Brake Station 2026</h1>
+          <h1 className="font-display text-3xl sm:text-5xl text-white">Tabla de posiciones · Copa Brake Station 2026</h1>
           <p className="text-white/70 text-sm mt-2">
             {progress
               ? `Resultados hasta la jornada ${progress.jornada}${progress.pending ? ` · ${plural(progress.pending, 'partido')} ${progress.pending === 1 ? 'pendiente' : 'pendientes'}` : ''}`
@@ -82,7 +82,10 @@ export default async function TablaPage() {
                 <caption className="sr-only">Tabla de posiciones de la fase regular</caption>
                 <thead className="text-xs uppercase tracking-wide text-white/70">
                   <tr className="border-b border-white/10">
-                    <th scope="col" className="sticky left-0 z-10 bg-brand-deep w-10 px-2 py-3 text-center">#</th>
+                    <th scope="col" className="sticky left-0 z-10 bg-brand-deep w-10 px-2 py-3 text-center">
+                      {/* w-6 + px-2 = 40px = left-10 del sticky de Equipo; sin esto la tabla lo encoge y Equipo tapa PJ */}
+                      <span className="inline-block w-6">#</span>
+                    </th>
                     <th scope="col" className="sticky left-10 z-10 bg-brand-deep px-2 py-3 text-left">Equipo</th>
                     <th scope="col" className="px-2 py-3"><abbr title="Partidos jugados" className="no-underline">PJ</abbr></th>
                     <th scope="col" className={`${EXTRA} px-2 py-3`}><abbr title="Ganados" className="no-underline">G</abbr></th>
@@ -98,8 +101,10 @@ export default async function TablaPage() {
                   {rows.map((r, i) => (
                     <tr key={r.name} className="border-b border-white/5 last:border-0">
                       <td className="sticky left-0 z-10 bg-brand-deep px-2 py-2 font-black text-white/80">
-                        {i + 1}
-                        {r.tecnico && <abbr title="Empate técnico" className="block text-[10px] font-semibold text-brand-gold no-underline">ET</abbr>}
+                        <span className="inline-block w-6">
+                          {i + 1}
+                          {r.tecnico && <abbr title="Empate técnico" className="block text-[10px] font-semibold text-brand-gold no-underline">ET</abbr>}
+                        </span>
                       </td>
                       <th scope="row" className="sticky left-10 z-10 bg-brand-deep px-2 py-2 text-left font-normal min-w-40">
                         <TeamLabel sponsor={r.sponsor} refaccionaria={r.refaccionaria} layout="horizontal" align="left" />
