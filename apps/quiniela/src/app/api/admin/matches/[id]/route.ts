@@ -2,6 +2,7 @@ import { db } from '@brakestation/db';
 import { matches, adminActions } from '@brakestation/db/schema';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { getAdminUserId } from '@/lib/admin-auth';
 import { isSameOrigin, forbiddenOrigin } from '@/lib/same-origin';
@@ -59,6 +60,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   await db.update(matches).set(updates).where(eq(matches.id, id));
+  revalidateTag('tabla'); // ya quedó guardado: /tabla refleja el marcador al instante
   await db.insert(adminActions).values({
     adminId,
     action: 'update_match',
